@@ -6,30 +6,56 @@ const generateBtn = document.querySelector('#generate');
 const inputZip = document.getElementById('zip');
 const myInput = document.querySelector('.myInput');
 let newDate = d.getMonth() + '.' + d.getDate() + '.' + d.getFullYear();
-// Create a new date instance dynamically with JS
 
-generateBtn.addEventListener('click', async function () {
+/*Start  function  */
+
+async function generate() {
   const zipCode = inputZip.value;
   const feeling = myInput.value;
-  const apiLink = `https://api.openweathermap.org/data/2.5/weather?zip=${zipCode}&appid=${apiKey}`;
-  const data = await fetch(apiLink);
-  weatherData = await data.json();
-  // console.log(weatherData);
-  const temp = weatherData.main.temp;
+  const temp = await getTemp(zipCode, apiKey);
   // console.log(temp, feeling, newDate);
+  objtosent = {
+    date: newDate,
+    temp,
+    content: feeling,
+  };
+  sentToServer('/userData', objtosent);
+  const response = await fetch('/getData');
+  const allData = await response.json();
+  console.log(allData);
+  retrieveData(allData);
+}
+async function retrieveData(allData) {
+  try {
+    console.log(allData);
 
-  await fetch('/userData', {
+    // Transform into JSON
+    // Write updated data to DOM elements
+    document.getElementById('temp').innerHTML =
+      Math.round(allData.temp) + 'degrees';
+    document.getElementById('content').innerHTML = allData.content;
+    document.getElementById('date').innerHTML = allData.date;
+  } catch (error) {
+    console.log('error', error);
+    // appropriately handle the error
+  }
+}
+// sent data to server  by path and object
+async function sentToServer(path, jsonObject) {
+  await fetch(path, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      date: newDate,
-      temp,
-      feeling,
-    }),
+    body: JSON.stringify(jsonObject),
   });
-  const response = await fetch('/getData');
-  const finalData = await response.json();
-  console.log(finalData);
-});
+}
+async function getTemp(zipCode, apiKey) {
+  const apiLink = `https://api.openweathermap.org/data/2.5/weather?zip=${zipCode}&appid=${apiKey}`;
+  const data = await fetch(apiLink);
+  weatherData = await data.json();
+  // console.log(weatherData);
+  return weatherData.main.temp;
+}
+/*End  function  */
+generateBtn.addEventListener('click', generate);
